@@ -4,8 +4,6 @@ import streamlit as st
 import prompts
 import utils
 
-MODEL = "gpt-4"
-
 st.title("Whitelisted Chatbot")
 
 with st.sidebar:
@@ -31,6 +29,7 @@ with st.sidebar:
                 else:
                     st.error("Incorrect Username/Password")
 
+    model = st.selectbox("Model", ["gpt-4-1106-preview", "gpt-4"])
     reset = st.button("Reset Chat")
     if reset:
         if "messages" in st.session_state:
@@ -100,7 +99,7 @@ if prompt := st.chat_input("What is up?"):
 
                 client = openai.OpenAI(api_key=st.session_state["OPENAI_API_KEY"])
                 for response in client.chat.completions.create(
-                    model=MODEL,
+                    model=model,
                     messages=[
                         {"role": m["role"], "content": m["content"]}
                         for m in st.session_state.messages
