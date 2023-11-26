@@ -97,9 +97,9 @@ if prompt := st.chat_input("What is up?"):
             with st.chat_message("assistant"):
                 message_placeholder = st.empty()
                 full_response = ""
-                openai.api_key = st.session_state["OPENAI_API_KEY"]
 
-                for response in openai.ChatCompletion.create(
+                client = openai.OpenAI(api_key=st.session_state["OPENAI_API_KEY"])
+                for response in client.chat.completions.create(
                     model=MODEL,
                     messages=[
                         {"role": m["role"], "content": m["content"]}
@@ -107,10 +107,10 @@ if prompt := st.chat_input("What is up?"):
                     ],
                     stream=True,
                 ):
-                    full_response += response.choices[0].delta.get("content", "")
+                    full_response += response.choices[0].delta.content or ""
                     message_placeholder.markdown(full_response + "▌")
             message_placeholder.markdown(full_response)
-        except openai.error.AuthenticationError as e:
+        except openai.AuthenticationError as e:
             st.error("Invalid API Key: please reset chat and try again")
             st.session_state.messages.pop()
             del st.session_state["OPENAI_API_KEY"]
