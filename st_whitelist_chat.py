@@ -11,6 +11,12 @@ with st.sidebar:
     show_info = st.toggle("Show Info", key="info")
 
     st.header("Chat Controls")
+    previous_topic = st.session_state.get("topic", "")
+    st.session_state.topic = st.selectbox("Whitelist Topic", prompts.WHITELISTED_TOPICS)
+    if st.session_state.topic != previous_topic:
+        if "messages" in st.session_state:
+            del st.session_state["messages"]
+
     if not st.session_state.get("OPENAI_API_KEY", ""):
         use_password = st.toggle("I have a username/password", key="use_password")
         if not use_password:
@@ -74,7 +80,10 @@ if show_info:
 
 
 # initialize/update system message
-system_message = {"role": "system", "content": prompts.SYSTEM_PROMPT}
+system_message = {
+    "role": "system",
+    "content": prompts.SYSTEM_PROMPT.format(topic=st.session_state.topic),
+}
 if "messages" not in st.session_state:
     st.session_state.messages = [system_message]
 st.session_state.messages[0] = system_message
