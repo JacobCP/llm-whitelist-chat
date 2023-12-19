@@ -11,9 +11,27 @@ with st.sidebar:
     show_info = st.toggle("Show Info", key="info")
 
     st.header("Chat Controls")
-    previous_topic = st.session_state.get("topic", "")
-    st.session_state.topic = st.selectbox("Whitelist Topic", prompts.WHITELISTED_TOPICS)
-    if st.session_state.topic != previous_topic:
+    st.selectbox("Whitelist Type", ["Topics", "Skills"], index=0, key="whitelist_type")
+    previous_whitelist = st.session_state.get("whitelist", "")
+    if st.session_state["whitelist_type"] == "Topics":
+        st.session_state.whitelist = st.selectbox(
+            "Whitelist Topic", st.secrets["WHITELISTED_TOPICS"]
+        )
+        st.session_state.prompt = prompts.TOPIC_SYSTEM_PROMPT.format(
+            topic=st.session_state.whitelist
+        )
+    elif st.session_state["whitelist_type"] == "Skills":
+        st.session_state.whitelist = st.selectbox(
+            "Whitelist Skill", st.secrets["WHITELISTED_SKILLS"]
+        )
+        st.session_state.prompt = prompts.SKILL_SYSTEM_PROMPT.format(
+            skill=st.session_state.whitelist
+        )
+    st.session_state.system_message = {
+        "role": "system",
+        "content": st.session_state.prompt,
+    }
+    if st.session_state.whitelist != previous_whitelist:
         if "messages" in st.session_state:
             del st.session_state["messages"]
 
@@ -80,13 +98,9 @@ if show_info:
 
 
 # initialize/update system message
-system_message = {
-    "role": "system",
-    "content": prompts.SYSTEM_PROMPT.format(topic=st.session_state.topic),
-}
 if "messages" not in st.session_state:
-    st.session_state.messages = [system_message]
-st.session_state.messages[0] = system_message
+    st.session_state.messages = [st.session_state.system_message]
+st.session_state.messages[0] = st.session_state.system_message
 
 # display messages
 for message in st.session_state.messages[1:]:
