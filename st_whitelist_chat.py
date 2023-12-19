@@ -22,10 +22,19 @@ with st.sidebar:
         )
     elif st.session_state["whitelist_type"] == "Skills":
         st.session_state.whitelist = st.selectbox(
-            "Whitelist Skill", st.secrets["WHITELISTED_SKILLS"]
+            "Whitelist Skill", list(st.secrets["WHITELISTED_SKILLS"])
         )
+        st.session_state.skill_description = st.secrets["WHITELISTED_SKILLS"][
+            st.session_state.whitelist
+        ]
+        if st.session_state.skill_description != "":
+            st.session_state.skill_description = (
+                f"\nThe definition of '{st.session_state.whitelist}' is:\n"
+                + f'"{st.session_state.skill_description}"\n'
+            )
         st.session_state.prompt = prompts.SKILL_SYSTEM_PROMPT.format(
-            skill=st.session_state.whitelist
+            skill=st.session_state.whitelist,
+            skill_description=st.session_state.skill_description,
         )
     st.session_state.system_message = {
         "role": "system",
@@ -101,6 +110,7 @@ if show_info:
 if "messages" not in st.session_state:
     st.session_state.messages = [st.session_state.system_message]
 st.session_state.messages[0] = st.session_state.system_message
+st.write(st.session_state.messages)
 
 # display messages
 for message in st.session_state.messages[1:]:
