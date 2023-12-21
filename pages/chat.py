@@ -107,7 +107,6 @@ if show_info:
 if "messages" not in st.session_state:
     st.session_state.messages = [st.session_state.system_message]
 st.session_state.messages[0] = st.session_state.system_message
-st.write(st.session_state.messages)
 
 # display messages
 for message in st.session_state.messages[1:]:
