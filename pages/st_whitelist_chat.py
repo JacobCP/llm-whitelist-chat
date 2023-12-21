@@ -1,6 +1,7 @@
 import openai
 import streamlit as st
 
+import common
 import prompts
 import utils
 
@@ -56,23 +57,7 @@ with st.sidebar:
         if "messages" in st.session_state:
             del st.session_state["messages"]
 
-    if not st.session_state.get("OPENAI_API_KEY", ""):
-        use_password = st.toggle("I have a username/password", key="use_password")
-        if not use_password:
-            api_key = st.text_input("Enter your OpenAI Key", "", type="password")
-            if api_key != "":
-                st.session_state["OPENAI_API_KEY"] = api_key
-                st.success("API Key Set")
-        else:
-            username = st.text_input("Enter Username", "")
-            password = st.text_input("Enter Password", "", type="password")
-            passwords = st.secrets["passwords"]
-            if username != "" and password != "":
-                if username in passwords and password == passwords[username]:
-                    st.session_state["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
-                    st.success("Login Successful")
-                else:
-                    st.error("Incorrect Username/Password")
+    common.manage_openai_credentials()
 
     model = st.selectbox("Model", ["gpt-4-1106-preview", "gpt-4"])
     reset = st.button("Reset Chat")
