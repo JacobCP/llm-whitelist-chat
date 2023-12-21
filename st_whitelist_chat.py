@@ -11,7 +11,9 @@ with st.sidebar:
     show_info = st.toggle("Show Info", key="info")
 
     st.header("Chat Controls")
-    st.selectbox("Whitelist Type", ["Topics", "Skills"], index=0, key="whitelist_type")
+    st.selectbox(
+        "Whitelist Type", ["Topics", "Skills", "GPTs"], index=0, key="whitelist_type"
+    )
     previous_whitelist = st.session_state.get("whitelist", "")
     if st.session_state["whitelist_type"] == "Topics":
         st.session_state.whitelist = st.selectbox(
@@ -35,6 +37,16 @@ with st.sidebar:
         st.session_state.prompt = prompts.SKILL_SYSTEM_PROMPT.format(
             skill=st.session_state.whitelist,
             skill_description=st.session_state.skill_description,
+        )
+    elif st.session_state["whitelist_type"] == "GPTs":
+        st.session_state.whitelist = st.selectbox(
+            "Whitelist Skill", list(st.secrets["WHITELISTED_GPTS"])
+        )
+        st.session_state.gpt_guidelines = st.secrets["WHITELISTED_GPTS"][
+            st.session_state.whitelist
+        ]
+        st.session_state.prompt = prompts.GPT_SYSTEM_PROMPT.format(
+            gpt_guidelines=st.session_state.gpt_guidelines,
         )
     st.session_state.system_message = {
         "role": "system",
