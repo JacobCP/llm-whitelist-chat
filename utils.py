@@ -1,10 +1,9 @@
 import openai
+import pydub
 import yagmail
 
 
 def send_email(user, password, to, subject, text):
-    print(user)
-    print(password)
     yag = yagmail.SMTP(user, password)
 
     # Send email
@@ -23,13 +22,22 @@ def format_messages(messages):
     return messages_string
 
 
-def text_to_speech(text, model="tts-1", voice="alloy"):
+def text_to_speech(text, model="tts-1", voice="alloy", response_format="mp3"):
     client = openai.OpenAI()
 
     audio_data = client.audio.speech.create(
         model=model,
         voice=voice,
         input=text,
+        response_format=response_format,
     ).content
 
     return audio_data
+
+
+def convert_audio(audio_file, input_format, output_format):
+    input_audio = pydub.AudioSegment.from_file(audio_file, format=input_format)
+    output_audio = input_audio.export(format=output_format)
+    output_data = output_audio.read()
+
+    return output_data
