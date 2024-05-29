@@ -33,7 +33,7 @@ with st.sidebar:
         if st.session_state.skill_description != "":
             st.session_state.skill_description = (
                 f"\nThe definition of '{st.session_state.whitelist}' is:\n"
-                + f'"{st.session_state.skill_description}"\n'
+                f'"{st.session_state.skill_description}"\n'
             )
         st.session_state.prompt = prompts.SKILL_SYSTEM_PROMPT.format(
             skill=st.session_state.whitelist,
@@ -138,7 +138,7 @@ if prompt := st.chat_input("What is up?"):
                     full_response += response.choices[0].delta.content or ""
                     message_placeholder.markdown(full_response + "▌")
             message_placeholder.markdown(full_response)
-        except openai.AuthenticationError as e:
+        except openai.AuthenticationError:
             st.error("Invalid API Key: please reset chat and try again")
             st.session_state.messages.pop()
             del st.session_state["OPENAI_API_KEY"]
