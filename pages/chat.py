@@ -60,7 +60,7 @@ with st.sidebar:
     common.manage_openai_credentials()
 
     model = st.selectbox(
-        "Model", ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "o1-preview", "o1-mini"]
+        "Model", ["gpt-4.1", "gpt-4.1-mini", "gpt-o3", "gpt-o4-mini", "gpt-4o"]
     )
     reset = st.button("Reset Chat")
     if reset:
