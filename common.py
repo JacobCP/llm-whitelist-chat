@@ -23,9 +23,3 @@ def manage_credentials():
                     st.success("Login Successful")
                 else:
                     st.error("Incorrect Username/Password")
-
-
-# Keep backward compatibility
-def manage_openai_credentials():
-    """Backward compatibility wrapper"""
-    manage_credentials()

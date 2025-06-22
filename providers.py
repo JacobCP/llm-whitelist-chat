@@ -38,13 +38,7 @@ def parse_model_selection(selection):
                 "base_url": provider_config["base_url"]
             }
     
-    # Fallback for backwards compatibility
-    return {
-        "model": selection,
-        "provider": "OpenAI",
-        "api_key_name": "OPENAI_API_KEY", 
-        "base_url": None
-    }
+    raise ValueError(f"Invalid model selection format: {selection}")
 
 def get_all_api_key_names():
     """Return a list of all API key names needed"""
