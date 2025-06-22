@@ -30,8 +30,12 @@ def verify_input_with_openai(messages):
             stream=False,
         )
         
-        verification_result = response.choices[0].message.content.strip()
-        return verification_result != "Invalid Input"
+        verification_result = response.choices[0].message.content
+        if verification_result:
+            verification_result = verification_result.strip()
+            return verification_result != "Invalid Input"
+        else:
+            return False
         
     except openai.AuthenticationError:
         st.error("Invalid OpenAI API Key for verification")
