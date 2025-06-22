@@ -3,6 +3,7 @@ import streamlit as st
 
 import common
 import prompts
+import providers
 import utils
 
 st.title("Whitelisted Chatbot")
@@ -57,11 +58,13 @@ with st.sidebar:
         if "messages" in st.session_state:
             del st.session_state["messages"]
 
-    common.manage_openai_credentials()
+    common.manage_credentials()
 
-    model = st.selectbox(
-        "Model", ["gpt-4.1", "gpt-4.1-mini", "gpt-o3", "gpt-o4-mini", "gpt-4o"]
+    model_selection = st.selectbox(
+        "Model", providers.get_model_provider_options()
     )
+    model_info = providers.parse_model_selection(model_selection)
+    model = model_info["model"]
     reset = st.button("Reset Chat")
     if reset:
         if "messages" in st.session_state:
@@ -117,8 +120,10 @@ for message in st.session_state.messages[1:]:
 
 # manage user input
 if prompt := st.chat_input("What is up?"):
-    if not st.session_state.get("OPENAI_API_KEY", ""):
-        st.error("please provide api key")
+    # Check if the required API key for the selected model is available
+    required_api_key = model_info["api_key_name"]
+    if not st.session_state.get(required_api_key, ""):
+        st.error(f"Please provide {model_info['provider']} API key")
     else:
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
@@ -128,7 +133,12 @@ if prompt := st.chat_input("What is up?"):
                 message_placeholder = st.empty()
                 full_response = ""
 
-                client = openai.OpenAI(api_key=st.session_state["OPENAI_API_KEY"])
+                # Create client with provider-specific API key and base URL
+                client_kwargs = {"api_key": st.session_state[required_api_key]}
+                if model_info["base_url"]:
+                    client_kwargs["base_url"] = model_info["base_url"]
+                
+                client = openai.OpenAI(**client_kwargs)
                 for response in client.chat.completions.create(
                     model=model,
                     messages=[
@@ -141,9 +151,9 @@ if prompt := st.chat_input("What is up?"):
                     message_placeholder.markdown(full_response + "▌")
             message_placeholder.markdown(full_response)
         except openai.AuthenticationError:
-            st.error("Invalid API Key: please reset chat and try again")
+            st.error(f"Invalid {model_info['provider']} API Key: please reset chat and try again")
             st.session_state.messages.pop()
-            del st.session_state["OPENAI_API_KEY"]
+            del st.session_state[required_api_key]
 
         if full_response != "Invalid Input":
             st.session_state.messages.append(

@@ -10,7 +10,7 @@ import utils
 st.title("Text to Speech Converter")
 st.session_state.audio_data = st.session_state.get("audio_data", {})
 
-common.manage_openai_credentials()
+common.manage_credentials()
 FORMATS = ["flac", "opus", "aac", "mp3"]
 
 with st.sidebar:

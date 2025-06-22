@@ -1,9 +1,13 @@
 import streamlit as st
+import providers
 
 
-def manage_openai_credentials():
+def manage_credentials():
+    """Manage authentication and load API keys for all providers"""
     with st.sidebar:
-        if not st.session_state.get("OPENAI_API_KEY", ""):
+        # Check if any API keys are loaded
+        api_key_names = providers.get_all_api_key_names()
+        if not any(st.session_state.get(key_name, "") for key_name in api_key_names):
             st.text_input("Enter Username", "", key="username")
             st.text_input("Enter Password", "", type="password", key="password")
             if st.session_state.username != "" and st.session_state.password != "":
@@ -12,9 +16,16 @@ def manage_openai_credentials():
                     and st.session_state.password
                     == st.secrets.passwords[st.session_state.username]
                 ):
-                    st.session_state["OPENAI_API_KEY"] = st.secrets[
-                        "OPENAI_API_KEY"
-                    ]
+                    # Load API keys for all configured providers
+                    for key_name in api_key_names:
+                        if key_name in st.secrets:
+                            st.session_state[key_name] = st.secrets[key_name]
                     st.success("Login Successful")
                 else:
                     st.error("Incorrect Username/Password")
+
+
+# Keep backward compatibility
+def manage_openai_credentials():
+    """Backward compatibility wrapper"""
+    manage_credentials()
