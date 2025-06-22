@@ -12,4 +12,4 @@ It currently utilizes OpenAI's "system message" to restrict the model to only pr
 
 GPT-4 is used, as GPT-3.5 doesn't reliably follow the instructions of the system message.
 
-To use the application, you'll need to either provide your own OpenAI API key, with access to GPT-4. (some users have been provided with a username/password that enables them to use the system's API key)
+To use the application, you'll need to provide a username/password that enables you to use the system's API key.
