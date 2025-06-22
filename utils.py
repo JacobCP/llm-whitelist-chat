@@ -23,7 +23,14 @@ def format_messages(messages):
 
 
 def text_to_speech(text, model="tts-1", voice="alloy", response_format="mp3"):
-    client = openai.OpenAI()
+    import streamlit as st
+    
+    # Use OpenAI API key from session state if available, otherwise default
+    api_key = st.session_state.get("OPENAI_API_KEY")
+    if api_key:
+        client = openai.OpenAI(api_key=api_key)
+    else:
+        client = openai.OpenAI()
 
     audio_data = client.audio.speech.create(
         model=model,
