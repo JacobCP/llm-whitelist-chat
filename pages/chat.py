@@ -4,7 +4,6 @@ import streamlit as st
 import common
 import prompts
 import providers
-import utils
 
 # Hardcoded OpenAI model for input verification
 VERIFICATION_MODEL = "gpt-4o"
@@ -107,40 +106,6 @@ with st.sidebar:
     if reset:
         if "messages" in st.session_state:
             del st.session_state["messages"]
-
-    st.header("Report Problems")
-    report = st.toggle("Report Problem", key="report")
-    if report:
-        reported_by = st.text_input("Your Email", "")
-        reporting_reason = st.selectbox(
-            "Reason fo Reporting", ["Allowed Incorrectly", "Blocked Incorrectly"]
-        )
-        additional_comments = st.text_input("Additional Comments (optional)", "")
-        subject = f"({reported_by}) Whitelisting Chatbot Report: {reporting_reason}"
-        text = utils.format_messages(st.session_state.messages[1:])
-        if reporting_reason == "Blocked Incorrectly":
-            text += (
-                f"\nUser: {st.session_state.get('last_invalid_message', 'not found')}"
-            )
-        if additional_comments:
-            text = additional_comments + "\n\n" + text
-
-        def send_report_email():
-            if not reported_by:
-                st.error("Email required to report problems")
-                return
-
-            utils.send_email(
-                st.secrets["email"],
-                st.secrets["password"],
-                st.secrets["email_to"],
-                subject,
-                text,
-            )
-            st.session_state["report"] = False
-            st.success("Report Sent!")
-
-        send_email = st.button("Report", on_click=send_report_email)
 
 if show_info:
     st.markdown(open("README.md").read())
