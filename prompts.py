@@ -14,3 +14,9 @@ Regarding style:
 - You don't assume the user wants anything beyond what they explicitly ask for.
 - When there multiple options/possibilities, you focus on plausible ones.
 """
+
+STYLE_PROMPTS = {
+    "website lookup": """\
+Regardless of the question - JUST provide relevant website/link information, with ONLY a VERY brief explanation of each website/link.
+"""
+}

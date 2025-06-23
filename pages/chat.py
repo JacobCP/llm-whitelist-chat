@@ -1,3 +1,5 @@
+import copy
+
 import openai
 import streamlit as st
 
@@ -52,43 +54,13 @@ with st.sidebar:
     show_info = st.toggle("Show Info", key="info")
 
     st.header("Chat Controls")
-    st.selectbox(
-        "Whitelist Type", ["Topics", "Skills", "GPTs"], index=0, key="whitelist_type"
-    )
     previous_whitelist = st.session_state.get("whitelist", "")
-    if st.session_state["whitelist_type"] == "Topics":
-        st.session_state.whitelist = st.selectbox(
-            "Whitelist Topic", st.secrets["WHITELISTED_TOPICS"]
-        )
-        st.session_state.prompt = prompts.TOPIC_SYSTEM_PROMPT.format(
-            topic=st.session_state.whitelist
-        )
-    elif st.session_state["whitelist_type"] == "Skills":
-        st.session_state.whitelist = st.selectbox(
-            "Whitelist Skill", list(st.secrets["WHITELISTED_SKILLS"])
-        )
-        st.session_state.skill_description = st.secrets["WHITELISTED_SKILLS"][
-            st.session_state.whitelist
-        ]
-        if st.session_state.skill_description != "":
-            st.session_state.skill_description = (
-                f"\nThe definition of '{st.session_state.whitelist}' is:\n"
-                f'"{st.session_state.skill_description}"\n'
-            )
-        st.session_state.prompt = prompts.SKILL_SYSTEM_PROMPT.format(
-            skill=st.session_state.whitelist,
-            skill_description=st.session_state.skill_description,
-        )
-    elif st.session_state["whitelist_type"] == "GPTs":
-        st.session_state.whitelist = st.selectbox(
-            "Whitelist Skill", list(st.secrets["WHITELISTED_GPTS"])
-        )
-        st.session_state.gpt_guidelines = st.secrets["WHITELISTED_GPTS"][
-            st.session_state.whitelist
-        ]
-        st.session_state.prompt = prompts.GPT_SYSTEM_PROMPT.format(
-            gpt_guidelines=st.session_state.gpt_guidelines,
-        )
+    st.session_state.whitelist = st.selectbox(
+        "Whitelist Topic", st.secrets["WHITELISTED_TOPICS"]
+    )
+    st.session_state.prompt = prompts.TOPIC_SYSTEM_PROMPT.format(
+        topic=st.session_state.whitelist
+    )
     st.session_state.system_message = {
         "role": "system",
         "content": st.session_state.prompt,
@@ -100,12 +72,13 @@ with st.sidebar:
     common.manage_credentials()
 
     model_selection = st.selectbox("Model", providers.get_model_provider_options())
-    model_info = providers.parse_model_selection(model_selection)
-    model = model_info["model"]
+    st.session_state.model_info = providers.parse_model_selection(model_selection)
     reset = st.button("Reset Chat")
     if reset:
         if "messages" in st.session_state:
             del st.session_state["messages"]
+
+    style = st.selectbox("Style", [""] + list(prompts.STYLE_PROMPTS.keys()))
 
 if show_info:
     st.markdown(open("README.md").read())
@@ -124,9 +97,9 @@ for message in st.session_state.messages[1:]:
 # manage user input
 if prompt := st.chat_input("What is up?"):
     # Check if the required API key for the selected model is available
-    required_api_key = model_info["api_key_name"]
+    required_api_key = st.session_state.model_info["api_key_name"]
     if not st.session_state.get(required_api_key, ""):
-        st.error(f"Please provide {model_info['provider']} API key")
+        st.error(f"Please provide {st.session_state.model_info['provider']} API key")
     else:
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
@@ -147,25 +120,38 @@ if prompt := st.chat_input("What is up?"):
 
                     # Create client with provider-specific API key and base URL
                     client_kwargs = {"api_key": st.session_state[required_api_key]}
-                    if model_info["base_url"]:
-                        client_kwargs["base_url"] = model_info["base_url"]
+                    if st.session_state.model_info["base_url"]:
+                        client_kwargs["base_url"] = st.session_state.model_info[
+                            "base_url"
+                        ]
 
                     client = openai.OpenAI(**client_kwargs)
 
+                    st.session_state.current_messages = copy.deepcopy(
+                        st.session_state.messages
+                    )
+
                     # Use messages WITHOUT system message for generation
-                    generation_messages = [
-                        {"role": m["role"], "content": m["content"]}
-                        for m in st.session_state.messages[1:]  # Skip system message
-                    ]
+                    if not style:
+                        st.session_state.current_messages[0]["content"] = ""
+                    else:
+                        st.session_state.current_messages[0] = {
+                            "role": "system",
+                            "content": prompts.STYLE_PROMPTS[style],
+                        }
+                        if st.session_state.model_info["provider"] == "Perplexity":
+                            st.session_state.current_messages[-1]["content"] += (
+                                "\n\n(" + prompts.STYLE_PROMPTS[style] + ")"
+                            )
 
                     for response in client.chat.completions.create(
-                        model=model,
-                        messages=generation_messages,
+                        model=st.session_state.model_info["model"],
+                        messages=st.session_state.current_messages,
                         stream=True,
                     ):
                         full_response += response.choices[0].delta.content or ""
                         message_placeholder.markdown(full_response + "▌")
-                    if model_info["provider"] == "Perplexity":
+                    if st.session_state.model_info["provider"] == "Perplexity":
                         citations = "\n\n".join(
                             [
                                 f"{citation} [{idx}]"
@@ -183,7 +169,7 @@ if prompt := st.chat_input("What is up?"):
 
             except openai.AuthenticationError:
                 st.error(
-                    f"Invalid {model_info['provider']} API Key: please reset chat and try again"
+                    f"Invalid {st.session_state.model_info['provider']} API Key: please reset chat and try again"
                 )
                 st.session_state.messages.pop()
                 del st.session_state[required_api_key]
