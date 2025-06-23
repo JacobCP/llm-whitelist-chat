@@ -216,3 +216,5 @@ if prompt := st.chat_input("What is up?"):
             st.session_state["last_invalid_message"] = st.session_state.messages.pop()[
                 "content"
             ]
+            with st.chat_message("assistant"):
+                st.markdown("Invalid Input")
