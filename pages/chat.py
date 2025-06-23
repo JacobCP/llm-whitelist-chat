@@ -200,6 +200,15 @@ if prompt := st.chat_input("What is up?"):
                     ):
                         full_response += response.choices[0].delta.content or ""
                         message_placeholder.markdown(full_response + "▌")
+                    if model_info["provider"] == "Perplexity":
+                        citations = "\n\n".join(
+                            [
+                                f"{citation} [{idx}]"
+                                for idx, citation in enumerate(response.citations)
+                            ]
+                        )
+                        full_response += f"\n\nCitations:\n\n{citations}"
+
                 message_placeholder.markdown(full_response)
 
                 # Add the response to messages
