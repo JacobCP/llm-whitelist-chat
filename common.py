@@ -23,9 +23,6 @@ def manage_credentials():
             if username and password:
                 success, message = auth_service.authenticate(username, password)
                 if success:
-                    # Load credentials into session state for backward compatibility
-                    for key_name, api_key in auth_service.get_all_credentials().items():
-                        st.session_state[key_name] = api_key
                     st.success(message)
                 else:
                     st.error(message)

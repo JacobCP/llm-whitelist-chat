@@ -1,15 +1,9 @@
-import copy
-
-import openai
 import streamlit as st
 
 import common
 import prompts
 import providers
 from chat_backend import ChatService
-
-# Hardcoded OpenAI model for input verification
-VERIFICATION_MODEL = "gpt-4o"
 
 
 def get_chat_service():
@@ -38,43 +32,20 @@ with st.sidebar:
     # Update chat service with whitelist topic
     if st.session_state.whitelist != previous_whitelist:
         chat_service.set_whitelist_topic(st.session_state.whitelist)
-        # Maintain backward compatibility with session state
-        st.session_state.prompt = prompts.TOPIC_SYSTEM_PROMPT.format(
-            topic=st.session_state.whitelist
-        )
-        st.session_state.system_message = {
-            "role": "system",
-            "content": st.session_state.prompt,
-        }
-        # Clear old messages
-        if "messages" in st.session_state:
-            del st.session_state["messages"]
 
     common.manage_credentials()
 
     model_selection = st.selectbox("Model", providers.get_model_provider_options())
     chat_service.set_model_info(model_selection)
-    # Maintain backward compatibility
-    st.session_state.model_info = providers.parse_model_selection(model_selection)
     
     reset = st.button("Reset Chat")
     if reset:
         chat_service.reset_chat()
-        if "messages" in st.session_state:
-            del st.session_state["messages"]
 
     style = st.selectbox("Style", [""] + list(prompts.STYLE_PROMPTS.keys()))
 
 if show_info:
     st.markdown(open("README.md").read())
-
-# Sync messages with session state for backward compatibility
-chat_messages = chat_service.get_messages()
-if chat_messages:
-    st.session_state.messages = chat_messages
-else:
-    if "messages" in st.session_state:
-        del st.session_state["messages"]
 
 # display messages
 for message in chat_service.get_display_messages():
@@ -112,13 +83,5 @@ if prompt := st.chat_input("What is up?"):
                     st.session_state["last_invalid_message"] = chat_service.get_last_invalid_message()
                 else:
                     st.error(error_message)
-                    # Handle API key deletion for auth errors
-                    if "API Key" in error_message and chat_service.model_info:
-                        required_api_key = chat_service.model_info["api_key_name"]
-                        if required_api_key in st.session_state:
-                            del st.session_state[required_api_key]
             else:
                 message_placeholder.markdown(full_response)
-        
-        # Sync updated messages back to session state
-        st.session_state.messages = chat_service.get_messages()
