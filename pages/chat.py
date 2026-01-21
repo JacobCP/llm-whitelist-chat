@@ -17,6 +17,15 @@ RESPONSES_MODELS = [
     "gpt-5.2-codex",
 ]
 
+# Model feature flags (only show UI + send params when supported)
+# Note: you mentioned `gpt-5.2` supports both; earlier models may not.
+MODEL_CAPABILITIES = {
+    "gpt-5.2": {"web_search": True, "thinking": True},
+    "gpt-5.2-codex": {"web_search": True, "thinking": True},
+}
+
+THINKING_LEVELS = ["low", "medium", "high", "xhigh"]
+
 
 def verify_input_with_openai(messages):
     """
@@ -78,6 +87,24 @@ with st.sidebar:
         "Model",
         RESPONSES_MODELS,
     )
+
+    # Optional model features (only shown when supported)
+    capabilities = MODEL_CAPABILITIES.get(
+        st.session_state.model, {"web_search": False, "thinking": False}
+    )
+
+    if capabilities["web_search"]:
+        st.checkbox("Enable web search", key="enable_web_search", value=False)
+    else:
+        st.session_state["enable_web_search"] = False
+
+    if capabilities["thinking"]:
+        if st.session_state.get("thinking_level") not in THINKING_LEVELS:
+            st.session_state["thinking_level"] = "medium"
+        st.selectbox("Thinking level", THINKING_LEVELS, key="thinking_level")
+    else:
+        st.session_state["thinking_level"] = None
+
     reset = st.button("Reset Chat")
     if reset:
         if "messages" in st.session_state:
@@ -136,11 +163,27 @@ if prompt := st.chat_input("What is up?"):
                         }
                         generation_messages = st.session_state.current_messages
 
-                    for event in client.responses.create(
-                        model=st.session_state.model,
-                        input=generation_messages,
-                        stream=True,
+                    selected_model = st.session_state.model
+                    capabilities = MODEL_CAPABILITIES.get(
+                        selected_model, {"web_search": False, "thinking": False}
+                    )
+                    request_kwargs = {
+                        "model": selected_model,
+                        "input": generation_messages,
+                        "stream": True,
+                    }
+
+                    if capabilities["web_search"] and st.session_state.get(
+                        "enable_web_search", False
                     ):
+                        request_kwargs["tools"] = [{"type": "web_search"}]
+
+                    if capabilities["thinking"] and st.session_state.get("thinking_level"):
+                        request_kwargs["reasoning"] = {
+                            "effort": st.session_state["thinking_level"]
+                        }
+
+                    for event in client.responses.create(**request_kwargs):
                         if getattr(event, "type", None) == "response.output_text.delta":
                             full_response += getattr(event, "delta", "") or ""
                             message_placeholder.markdown(full_response + "▌")
