@@ -9,6 +9,14 @@ import prompts
 # Hardcoded OpenAI model for input verification
 VERIFICATION_MODEL = "gpt-4o"
 
+# Models that support the Responses API (latest/common as of 2026-01)
+RESPONSES_MODELS = [
+    "gpt-4o",
+    "gpt-5-mini",
+    "gpt-5.2",
+    "gpt-5.2-codex",
+]
+
 
 def verify_input_with_openai(messages):
     """
@@ -25,13 +33,12 @@ def verify_input_with_openai(messages):
         client = openai.OpenAI(api_key=openai_api_key)
 
         # Create a non-streaming response for verification
-        response = client.chat.completions.create(
+        response = client.responses.create(
             model=VERIFICATION_MODEL,
-            messages=messages,
-            stream=False,
+            input=messages,
         )
 
-        verification_result = response.choices[0].message.content
+        verification_result = response.output_text
         if verification_result:
             verification_result = verification_result.strip()
             return verification_result != "Invalid Input"
@@ -69,7 +76,7 @@ with st.sidebar:
 
     st.session_state.model = st.selectbox(
         "Model",
-        ["gpt-4.1", "gpt-4.1-mini", "gpt-o3", "gpt-o4-mini", "gpt-4o"],
+        RESPONSES_MODELS,
     )
     reset = st.button("Reset Chat")
     if reset:
@@ -121,20 +128,24 @@ if prompt := st.chat_input("What is up?"):
 
                     # Use messages WITHOUT system message for generation
                     if not style:
-                        st.session_state.current_messages[0]["content"] = ""
+                        generation_messages = st.session_state.current_messages[1:]
                     else:
                         st.session_state.current_messages[0] = {
                             "role": "system",
                             "content": prompts.STYLE_PROMPTS[style],
                         }
+                        generation_messages = st.session_state.current_messages
 
-                    for response in client.chat.completions.create(
+                    for event in client.responses.create(
                         model=st.session_state.model,
-                        messages=st.session_state.current_messages,
+                        input=generation_messages,
                         stream=True,
                     ):
-                        full_response += response.choices[0].delta.content or ""
-                        message_placeholder.markdown(full_response + "▌")
+                        if getattr(event, "type", None) == "response.output_text.delta":
+                            full_response += getattr(event, "delta", "") or ""
+                            message_placeholder.markdown(full_response + "▌")
+                        elif getattr(event, "type", None) == "error":
+                            raise RuntimeError(getattr(event, "error", "Unknown error"))
 
                 message_placeholder.markdown(full_response)
 

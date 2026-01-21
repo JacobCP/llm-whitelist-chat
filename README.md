@@ -10,6 +10,8 @@ The application uses OpenAI's API for the LLM model, and streamlit for the UI.
 
 It currently utilizes OpenAI's "system message" to restrict the model to only provide content on one topic (currently coding).   
 
-GPT-4 is used, as GPT-3.5 doesn't reliably follow the instructions of the system message.
+The chat page uses OpenAI's **Responses API**.
+
+Newer models are recommended, as older models don't reliably follow the system-message constraint.
 
 To use the application, you'll need to provide a username/password that enables you to use the system's API key.
