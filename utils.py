@@ -1,17 +1,5 @@
 import openai
 import pydub
-import yagmail
-
-
-def send_email(user, password, to, subject, text):
-    yag = yagmail.SMTP(user, password)
-
-    # Send email
-    yag.send(
-        to=to,
-        subject=subject,
-        contents=text,
-    )
 
 
 def format_messages(messages):
@@ -24,7 +12,7 @@ def format_messages(messages):
 
 def text_to_speech(text, model="tts-1", voice="alloy", response_format="mp3"):
     import streamlit as st
-    
+
     # Use OpenAI API key from session state if available, otherwise default
     api_key = st.session_state.get("OPENAI_API_KEY")
     if api_key:

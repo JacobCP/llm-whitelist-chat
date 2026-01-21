@@ -5,7 +5,6 @@ import streamlit as st
 
 import common
 import prompts
-import providers
 
 # Hardcoded OpenAI model for input verification
 VERIFICATION_MODEL = "gpt-4o"
@@ -50,9 +49,6 @@ def verify_input_with_openai(messages):
 st.title("Whitelisted Chatbot")
 
 with st.sidebar:
-    st.header("Info")
-    show_info = st.toggle("Show Info", key="info")
-
     st.header("Chat Controls")
     previous_whitelist = st.session_state.get("whitelist", "")
     st.session_state.whitelist = st.selectbox(
@@ -71,17 +67,16 @@ with st.sidebar:
 
     common.manage_credentials()
 
-    model_selection = st.selectbox("Model", providers.get_model_provider_options())
-    st.session_state.model_info = providers.parse_model_selection(model_selection)
+    st.session_state.model = st.selectbox(
+        "Model",
+        ["gpt-4.1", "gpt-4.1-mini", "gpt-o3", "gpt-o4-mini", "gpt-4o"],
+    )
     reset = st.button("Reset Chat")
     if reset:
         if "messages" in st.session_state:
             del st.session_state["messages"]
 
     style = st.selectbox("Style", [""] + list(prompts.STYLE_PROMPTS.keys()))
-
-if show_info:
-    st.markdown(open("README.md").read())
 
 
 # initialize/update system message
@@ -97,9 +92,9 @@ for message in st.session_state.messages[1:]:
 # manage user input
 if prompt := st.chat_input("What is up?"):
     # Check if the required API key for the selected model is available
-    required_api_key = st.session_state.model_info["api_key_name"]
+    required_api_key = "OPENAI_API_KEY"
     if not st.session_state.get(required_api_key, ""):
-        st.error(f"Please provide {st.session_state.model_info['provider']} API key")
+        st.error("Please provide OpenAI API key")
     else:
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
@@ -118,14 +113,7 @@ if prompt := st.chat_input("What is up?"):
                     message_placeholder = st.empty()
                     full_response = ""
 
-                    # Create client with provider-specific API key and base URL
-                    client_kwargs = {"api_key": st.session_state[required_api_key]}
-                    if st.session_state.model_info["base_url"]:
-                        client_kwargs["base_url"] = st.session_state.model_info[
-                            "base_url"
-                        ]
-
-                    client = openai.OpenAI(**client_kwargs)
+                    client = openai.OpenAI(api_key=st.session_state[required_api_key])
 
                     st.session_state.current_messages = copy.deepcopy(
                         st.session_state.messages
@@ -139,26 +127,14 @@ if prompt := st.chat_input("What is up?"):
                             "role": "system",
                             "content": prompts.STYLE_PROMPTS[style],
                         }
-                        if st.session_state.model_info["provider"] == "Perplexity":
-                            st.session_state.current_messages[-1]["content"] += (
-                                "\n\n(" + prompts.STYLE_PROMPTS[style] + ")"
-                            )
 
                     for response in client.chat.completions.create(
-                        model=st.session_state.model_info["model"],
+                        model=st.session_state.model,
                         messages=st.session_state.current_messages,
                         stream=True,
                     ):
                         full_response += response.choices[0].delta.content or ""
                         message_placeholder.markdown(full_response + "▌")
-                    if st.session_state.model_info["provider"] == "Perplexity":
-                        citations = "\n\n".join(
-                            [
-                                f"{citation} [{idx}]"
-                                for idx, citation in enumerate(response.citations)
-                            ]
-                        )
-                        full_response += f"\n\nCitations:\n\n{citations}"
 
                 message_placeholder.markdown(full_response)
 
@@ -169,7 +145,7 @@ if prompt := st.chat_input("What is up?"):
 
             except openai.AuthenticationError:
                 st.error(
-                    f"Invalid {st.session_state.model_info['provider']} API Key: please reset chat and try again"
+                    "Invalid OpenAI API Key: please reset chat and try again"
                 )
                 st.session_state.messages.pop()
                 del st.session_state[required_api_key]
